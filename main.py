@@ -1,8 +1,5 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-# Filter out the specific warning
-warnings.filterwarnings("ignore", message="You are using `torch.load` with `weights_only=False`", category=FutureWarning)
-warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 
 # Disable linting for non-top-level imports
 # flake8: noqa: E402
@@ -18,21 +15,25 @@ import io
 import pygame
 import json
 
+# Filter out the specific warning
+warnings.filterwarnings("ignore", message="You are using `torch.load` with `weights_only=False`", category=FutureWarning)
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
+
 # Load configuration
 with open('config.json', 'r') as config_file:
-    config = json.load(config_file)
+  config = json.load(config_file)
 
 # Configure colorlog
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter(
-    '%(log_color)s%(levelname)s:%(name)s:%(message)s',
-    log_colors={
-        'DEBUG': 'blue',
-        'INFO': 'green',
-        'WARNING': 'yellow',
-        'ERROR': 'red',
-        'CRITICAL': 'red,bg_white',
-    }
+  '%(log_color)s%(levelname)s:%(name)s:%(message)s',
+  log_colors={
+    'DEBUG': 'blue',
+    'INFO': 'green',
+    'WARNING': 'yellow',
+    'ERROR': 'red',
+    'CRITICAL': 'red,bg_white',
+  }
 ))
 
 # Set up logging for this script
@@ -42,8 +43,8 @@ logger.addHandler(handler)
 
 # Set logging level for all other loggers to INFO
 for name in logging.root.manager.loggerDict:
-    if name != __name__:
-        logging.getLogger(name).setLevel(logging.INFO)
+  if name != __name__:
+    logging.getLogger(name).setLevel(logging.INFO)
 
 # Load Whisper model
 model = whisper.load_model(config['whisper_model'])
@@ -78,61 +79,61 @@ logger.info(f"Source language: {config['source_language']}")
 logger.info(f"Target language: {config['target_language']}")
 
 try:
-    while True:
-        try:
-            # Capture audio
-            audio_chunk = np.frombuffer(
-                stream.read(CHUNK, exception_on_overflow=False),
-                dtype=np.float32
+  while True:
+    try:
+      # Capture audio
+      audio_chunk = np.frombuffer(
+        stream.read(CHUNK, exception_on_overflow=False),
+        dtype=np.float32
+      )
+      buffer.extend(audio_chunk)
+
+      # Process when buffer reaches desired length
+      if len(buffer) >= RATE * BUFFER_SECONDS:
+        audio_data = np.array(buffer)
+        
+        # Check if the audio energy is above the threshold
+        if np.abs(audio_data).mean() > ENERGY_THRESHOLD:
+          result = model.transcribe(audio_data, language=config['source_language'])
+
+          if result["text"]:
+            logger.debug(f"Transcribed audio: {result}")
+
+            # Translate to target language
+            translation = translator.translate(
+              result["text"], src=config['source_language'], dest=config['target_language']
             )
-            buffer.extend(audio_chunk)
 
-            # Process when buffer reaches desired length
-            if len(buffer) >= RATE * BUFFER_SECONDS:
-                audio_data = np.array(buffer)
-                
-                # Check if the audio energy is above the threshold
-                if np.abs(audio_data).mean() > ENERGY_THRESHOLD:
-                    result = model.transcribe(audio_data, language=config['source_language'])
+            logger.info(f"{config['source_language'].upper()}: {result['text']}")
+            logger.info(f"{config['target_language'].upper()}: {translation.text}")
+            logger.info("---")
 
-                    if result["text"]:
-                        logger.debug(f"Transcribed audio: {result}")
+            # Convert translated text to speech
+            tts = gTTS(text=translation.text, lang=config['target_language'])
+            fp = io.BytesIO()
+            tts.write_to_fp(fp)
+            fp.seek(0)
 
-                        # Translate to target language
-                        translation = translator.translate(
-                            result["text"], src=config['source_language'], dest=config['target_language']
-                        )
+            # Play the generated speech
+            pygame.mixer.music.load(fp)
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy():
+              pygame.time.Clock().tick(10)
+        else:
+          logger.debug("Silence detected, skipping transcription")
 
-                        logger.info(f"{config['source_language'].upper()}: {result['text']}")
-                        logger.info(f"{config['target_language'].upper()}: {translation.text}")
-                        logger.info("---")
+        # Clear buffer
+        buffer = []
 
-                        # Convert translated text to speech
-                        tts = gTTS(text=translation.text, lang=config['target_language'])
-                        fp = io.BytesIO()
-                        tts.write_to_fp(fp)
-                        fp.seek(0)
-
-                        # Play the generated speech
-                        pygame.mixer.music.load(fp)
-                        pygame.mixer.music.play()
-                        while pygame.mixer.music.get_busy():
-                            pygame.time.Clock().tick(10)
-                else:
-                    logger.debug("Silence detected, skipping transcription")
-
-                # Clear buffer
-                buffer = []
-
-        except OSError as e:
-            logger.warning(f"Audio input error: {e}")
-            continue
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            continue
+    except OSError as e:
+      logger.warning(f"Audio input error: {e}")
+      continue
+    except Exception as e:
+      logger.error(f"Unexpected error: {e}")
+      continue
 
 except KeyboardInterrupt:
-    logger.info("Stopping...")
+  logger.info("Stopping...")
 
 # Clean up
 stream.stop_stream()

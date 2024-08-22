@@ -1,12 +1,14 @@
 # Whisper Playground: Real-time English to Korean Translation
+# Wiseupeo Whisper: Real-time Speech Translation
 
-This project uses OpenAI's Whisper model to transcribe English speech in real-time and translate it to Korean.
+This project uses OpenAI's Whisper model to transcribe speech in real-time and translate it to another language.
 
 ## Features
 
 - Real-time audio capture from microphone
 - Speech recognition using Whisper
-- Translation from English to Korean
+- Translation between configurable source and target languages
+- Text-to-speech output of translated text
 - Continuous operation with easy termination
 
 ## Requirements
@@ -39,12 +41,14 @@ This project uses OpenAI's Whisper model to transcribe English speech in real-ti
    pip install -r requirements.txt
    ```
 
+4. Configure the application:
+   Edit `config.json` to set your desired source and target languages, Whisper model, and other parameters.
+
 ## Usage
 
 Run the script with:
-
 ```
-python whisper_playground.py
+python main.py
 ```
 
 Speak into your microphone in English. The script will transcribe your speech and translate it to Korean in real-time.
