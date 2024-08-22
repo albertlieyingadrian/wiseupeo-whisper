@@ -1,0 +1,5 @@
+colorlog
+openai-whisper
+pyaudio
+numpy
+googletrans==3.1.0a0
