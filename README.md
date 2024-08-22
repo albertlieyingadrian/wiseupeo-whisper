@@ -1,5 +1,4 @@
-# Whisper Playground: Real-time English to Korean Translation
-# Wiseupeo Whisper: Real-time Speech Translation
+# Wiseupeo Whisper: Real-time Speech Translation (English to Korean, etc)
 
 This project uses OpenAI's Whisper model to transcribe speech in real-time and translate it to another language.
 
