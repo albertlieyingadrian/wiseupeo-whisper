@@ -1,6 +1,6 @@
 {
-    "source_language": "ko",
-    "target_language": "en",
+    "source_language": "en",
+    "target_language": "ko",
     "whisper_model": "base",
     "energy_threshold": 0.01,
     "buffer_seconds": 1,
