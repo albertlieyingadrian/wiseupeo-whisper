@@ -1,3 +1,11 @@
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+# Filter out the specific warning
+warnings.filterwarnings("ignore", message="You are using `torch.load` with `weights_only=False`", category=FutureWarning)
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
+
+# Disable linting for non-top-level imports
+# flake8: noqa: E402
 import whisper
 import pyaudio
 import numpy as np
@@ -13,9 +21,6 @@ import json
 # Load configuration
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
-
-# Filter out the specific warning
-warnings.filterwarnings("ignore", message="You are using `torch.load` with `weights_only=False`", category=FutureWarning)
 
 # Configure colorlog
 handler = colorlog.StreamHandler()
@@ -68,9 +73,9 @@ translator = Translator()
 # Initialize pygame mixer for audio playback
 pygame.mixer.init()
 
-print("Listening... (Press Ctrl+C to stop)")
-print(f"Source language: {config['source_language']}")
-print(f"Target language: {config['target_language']}")
+logger.info("Listening... (Press Ctrl+C to stop)")
+logger.info(f"Source language: {config['source_language']}")
+logger.info(f"Target language: {config['target_language']}")
 
 try:
     while True:
@@ -97,17 +102,17 @@ try:
                         translation = translator.translate(
                             result["text"], src=config['source_language'], dest=config['target_language']
                         )
-                        
-                        print(f"{config['source_language'].upper()}: {result['text']}")
-                        print(f"{config['target_language'].upper()}: {translation.text}")
-                        print("---")
+
+                        logger.info(f"{config['source_language'].upper()}: {result['text']}")
+                        logger.info(f"{config['target_language'].upper()}: {translation.text}")
+                        logger.info("---")
 
                         # Convert translated text to speech
                         tts = gTTS(text=translation.text, lang=config['target_language'])
                         fp = io.BytesIO()
                         tts.write_to_fp(fp)
-                        fp.seek(0) 
-                       
+                        fp.seek(0)
+
                         # Play the generated speech
                         pygame.mixer.music.load(fp)
                         pygame.mixer.music.play()
@@ -127,7 +132,7 @@ try:
             continue
 
 except KeyboardInterrupt:
-    print("Stopping...")
+    logger.info("Stopping...")
 
 # Clean up
 stream.stop_stream()
