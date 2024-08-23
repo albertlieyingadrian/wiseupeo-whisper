@@ -1,4 +1,7 @@
 colorlog
+eventlet
+flask
+flask-socketio
 gTTS
 openai-whisper
 pyaudio
